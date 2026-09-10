@@ -1,0 +1,1 @@
+export function Botao({children}:any){ return <button>{children}</button> }

@@ -1,0 +1,1 @@
+export default function Clientes(){ return <div>Clientes - lista vem do Drive/Turso</div> }

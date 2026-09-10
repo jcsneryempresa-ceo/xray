@@ -1,0 +1,1 @@
+export default function Plugins(){ return <div>Plugins - atendente-whatsapp ativo</div> }
