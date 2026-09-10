@@ -1,6 +1,7 @@
-import { chamarLlama } from '@/lib/ia/motor'
-export async function handleMensagem(tenantId: string, de: string, mensagem: string){
-  const resposta = await chamarLlama(`${mensagem}`)
-  // Aqui salva no Turso + Drive
-  return resposta
+export async function handleMensagem(mensagem: any) {
+  console.log("mensagem:", mensagem)
+  return { ok: true }
+}
+export async function handleWebhook(req: any) {
+  return { ok: true }
 }
