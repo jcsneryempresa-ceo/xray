@@ -273,7 +273,7 @@ export default function App() {
               </div>
 
               <button
-                onClick={() => setScreen("onboarding")}
+                onClick={() => window.location.href = "/api/auth/google"}
                 className="mt-12 w-full h-[52px] rounded-full bg-white border border-[#E9E9EB] shadow-[0_2px_8px_rgba(0,0,0,0.04)] flex items-center justify-center gap-3 hover:bg-[#FCFCFD] active:scale-[0.99] transition"
               >
                 <svg width="20" height="20" viewBox="0 0 24 24">
