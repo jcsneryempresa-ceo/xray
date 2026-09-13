@@ -225,6 +225,7 @@ function BottomNav({
   );
 }
 
+  const [screen, setScreen] = useState<Screen>("login");
 export default function App() {
   const [screen, setScreen] = useState<Screen>("login");
   const [whatsapp, setWhatsapp] = useState("");
