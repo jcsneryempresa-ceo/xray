@@ -1,9 +1,6 @@
 import { google } from 'googleapis'
-/**
- * Fluxo drive.file - só vê o que ELE criou
- * 1. Cria pasta xray - ${nomeNegocio}
- * 2. Tudo dentro dela é seu
- */
+import { Readable } from 'stream'
+
 export async function criarPastaRaiz(auth: any, nomeNegocio: string){
   const drive = google.drive({ version: 'v3', auth })
   const pasta = await drive.files.create({
@@ -15,10 +12,22 @@ export async function criarPastaRaiz(auth: any, nomeNegocio: string){
   })
   return { folderId: pasta.data.id, link: pasta.data.webViewLink }
 }
-export async function salvarArquivoNaPasta(auth: any, folderId: string, nome: string, conteudo: string){
+
+export async function salvarArquivoNaPasta(auth: any, folderId: string, nome: string, conteudo: string, mime='application/json'){
   const drive = google.drive({ version: 'v3', auth })
+  const stream = Readable.from([conteudo])
   return await drive.files.create({
     requestBody: { name: nome, parents: [folderId] },
-    media: { mimeType: 'text/csv', body: conteudo }
+    media: { mimeType: mime, body: stream },
+    fields: 'id, webViewLink'
   })
+}
+
+export async function listarArquivos(auth: any, folderId: string){
+  const drive = google.drive({ version: 'v3', auth })
+  const list = await drive.files.list({
+    q: `'${folderId}' in parents and trashed=false`,
+    fields:'files(id,name,webViewLink,createdTime)'
+  })
+  return list.data.files
 }
