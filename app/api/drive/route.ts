@@ -1,35 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getAuthClientByEmail } from '@/lib/google/auth'
-import { listarArquivos, salvarArquivoNaPasta } from '@/lib/integracoes/google-drive'
+import { supabaseAdmin } from '@/lib/db/supabase'
 
-export const dynamic = 'force-dynamic'
-export const runtime = 'nodejs'
-
-export async function GET(req: NextRequest){
+export async function GET(req: NextRequest) {
   const email = req.cookies.get('xray_email')?.value
-  const folderId = req.cookies.get('xray_folder')?.value
-  if(!email || !folderId) return NextResponse.json({files:[], error:'not auth'}, {status:401})
-  try{
-    const auth = await getAuthClientByEmail(email)
-    const files = await listarArquivos(auth, folderId)
-    return NextResponse.json({files, folderId})
-  } catch(e:any){
-    return NextResponse.json({error:e.message, files:[]}, {status:401})
-  }
-}
+  if (!email) return NextResponse.json({ error: 'not logged' }, { status: 401 })
 
-export async function POST(req: NextRequest){
-  const body = await req.json()
-  const email = req.cookies.get('xray_email')?.value
-  const folderId = req.cookies.get('xray_folder')?.value
-  if(!email || !folderId) return NextResponse.json({error:'not auth'}, {status:401})
-  try{
-    const auth = await getAuthClientByEmail(email)
-    const nome = body.nome || `cliente-${Date.now()}.json`
-    const conteudo = JSON.stringify(body, null, 2)
-    const file = await salvarArquivoNaPasta(auth, folderId, nome, conteudo)
-    return NextResponse.json(file.data)
-  } catch(e:any){
-    return NextResponse.json({error:e.message}, {status:500})
-  }
+  const { data } = await supabaseAdmin.from('tenants').select('*').eq('id', email).single()
+  if (!data?.refresh_token) return NextResponse.json({ error: 'no refresh_token, refaca login' }, { status: 401 })
+
+  const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      client_id: process.env.GOOGLE_CLIENT_ID!,
+      client_secret: process.env.GOOGLE_CLIENT_SECRET!,
+      refresh_token: data.refresh_token,
+      grant_type: 'refresh_token'
+    })
+  }).then(r => r.json())
+
+  const files = await fetch(`https://www.googleapis.com/drive/v3/files?q='${data.google_folder_id}' in parents&fields=files(id,name)`, {
+    headers: { Authorization: `Bearer ${tokenRes.access_token}` }
+  }).then(r => r.json())
+
+  return NextResponse.json({ folder: data.google_folder_id, files: files.files || [] })
 }

@@ -1,61 +1,58 @@
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from 'next/server'
-import { google } from 'googleapis'
-import { saveTenant } from '@/lib/google/auth'
+import { supabaseAdmin } from '@/lib/db/supabase'
 
-export async function GET(req: NextRequest){
+export async function GET(req: NextRequest) {
   const code = req.nextUrl.searchParams.get('code')
-  const error = req.nextUrl.searchParams.get('error')
-  if(error) return NextResponse.json({error}, {status:400})
-  if(!code) return NextResponse.json({error:'no code'}, {status:400})
+  if (!code) return NextResponse.json({ error: 'no code' }, { status: 400 })
 
-  const oauth2Client = new google.auth.OAuth2(
-    process.env.GOOGLE_CLIENT_ID,
-    process.env.GOOGLE_CLIENT_SECRET,
-    process.env.GOOGLE_REDIRECT_URI
-  )
-  const { tokens } = await oauth2Client.getToken(code)
-  oauth2Client.setCredentials(tokens)
-
-  const oauth2 = google.oauth2({version:'v2', auth: oauth2Client})
-  const userInfo = await oauth2.userinfo.get()
-  const email = userInfo.data.email || 'usuario'
-
-  const drive = google.drive({version:'v3', auth: oauth2Client})
-  const pastaExistente = await drive.files.list({
-    q: `name='xray - ${email}' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
-    fields:'files(id,name,webViewLink)'
-  })
-  let folderId = pastaExistente.data.files?.[0]?.id
-  let webViewLink = (pastaExistente.data.files?.[0] as any)?.webViewLink
-
-  if(!folderId){
-    const nova = await drive.files.create({
-      requestBody:{name:`xray - ${email}`, mimeType:'application/vnd.google-apps.folder'},
-      fields:'id, webViewLink'
+  const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      code,
+      client_id: process.env.GOOGLE_CLIENT_ID!,
+      client_secret: process.env.GOOGLE_CLIENT_SECRET!,
+      redirect_uri: `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/google/callback`,
+      grant_type: 'authorization_code',
     })
-    folderId = nova.data.id as string
-    webViewLink = nova.data.webViewLink as string
+  })
+  const tokens = await tokenRes.json()
+  if (!tokens.access_token) {
+    return NextResponse.json({ error: 'google token fail', details: tokens }, { status: 400 })
   }
 
-  // Salva refresh_token no Turso (persistente) - só vem na primeira autorização
-  const refreshToken = tokens.refresh_token || null
+  const userInfo = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+    headers: { Authorization: `Bearer ${tokens.access_token}` }
+  }).then(r => r.json())
+
+  const email = userInfo.email
+  const id = email
+
+  let folderId = ''
   try {
-    await saveTenant(email, folderId!, refreshToken)
-  } catch(e){
-    console.error('erro turso', e)
-  }
+    const driveRes = await fetch('https://www.googleapis.com/drive/v3/files', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${tokens.access_token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        name: `xray - ${email}`,
+        mimeType: 'application/vnd.google-apps.folder'
+      })
+    }).then(r => r.json())
+    folderId = driveRes.id || ''
+  } catch {}
 
-  const baseUrl = new URL(req.url).origin
-  const res = NextResponse.redirect(new URL('/dashboard', baseUrl))
+  await supabaseAdmin.from('tenants').upsert({
+    id,
+    email,
+    google_folder_id: folderId,
+    refresh_token: tokens.refresh_token || null
+  }, { onConflict: 'id' })
 
-  // Cookie leve: só email e folder. Token fica no Turso.
-  res.cookies.set('xray_email', email, {httpOnly:true, secure:true, sameSite:'lax', maxAge: 60*60*24*30, path:'/'})
-  res.cookies.set('xray_folder', folderId || '', {httpOnly:true, secure:true, sameSite:'lax', maxAge: 60*60*24*30, path:'/'})
-  // Flag se tem refresh
-  res.cookies.set('xray_has_refresh', refreshToken ? '1' : '0', {httpOnly:false, maxAge: 60*60*24*30, path:'/'})
-  if(webViewLink) res.cookies.set('xray_folder_link', webViewLink, {httpOnly:false, maxAge: 60*60*24*30, path:'/'})
-
+  const res = NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/dashboard`)
+  res.cookies.set('xray_email', email, { path: '/', maxAge: 2592000 })
+  if (folderId) res.cookies.set('xray_folder', folderId, { path: '/', maxAge: 2592000 })
   return res
 }
