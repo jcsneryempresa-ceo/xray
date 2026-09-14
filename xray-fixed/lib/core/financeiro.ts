@@ -1,1 +1,0 @@
-export type Venda = { id: string, valor: number }

@@ -1,1 +1,0 @@
-export function MenuLateral(){ return <nav>Turbo Admin</nav> }

@@ -1,1 +1,0 @@
-export function CartaoCliente(){ return <div>Cartão</div> }

@@ -1,1 +1,0 @@
-export const id = 'marketing-vaga-ociosa'
