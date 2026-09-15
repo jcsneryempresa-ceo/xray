@@ -13,8 +13,8 @@ export default function Dashboard() {
   const [inputText, setInputText] = useState("");
 
   return (
-    <div className="min-h-screen w-full bg-[#F6F6F7] flex justify-center items-start md:items-center md:py-8 font-[Inter]">
-      <div className="w-full max-w-[390px] bg-white h-screen md:h-[860px] md:rounded-[32px] md:shadow-[0_0_0_1px_rgba(0,0,0,0.06),0_24px_80px_rgba(0,0,0,0.12)] overflow-hidden flex flex-col relative">
+    <div className="h-[100dvh] w-full bg-[#F6F6F7] flex justify-center items-start md:items-center md:py-8 font-[Inter] overflow-hidden">
+      <div className="w-full max-w-[390px] bg-white h-[100dvh] md:h-[860px] md:rounded-[32px] md:shadow-[0_0_0_1px_rgba(0,0,0,0.06),0_24px_80px_rgba(0,0,0,0.12)] overflow-hidden flex flex-col relative">
         <div className="flex items-center justify-between px-5 h-[56px] shrink-0 bg-white/80 backdrop-blur-xl border-b border-[#F3F3F4] sticky top-0 z-10">
           <div className="flex items-center gap-2.5">
             <SmallBrainLogo />
