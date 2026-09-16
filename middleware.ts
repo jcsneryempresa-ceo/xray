@@ -9,11 +9,11 @@ export function middleware(req: NextRequest){
 
   // Se está tentando acessar painel sem auth, manda pro onboarding
   if(!email || !folder){
-    if(req.nextUrl.pathname.startsWith('/dashboard') || req.nextUrl.pathname.startsWith('/contatos') || req.nextUrl.pathname.startsWith('/plugins')){
+    if(req.nextUrl.pathname.startsWith('/dashboard') || req.nextUrl.pathname.startsWith('/contatos') || req.nextUrl.pathname.startsWith('/plugins') || req.nextUrl.pathname.startsWith('/config')){
       return NextResponse.redirect(new URL('/onboarding', req.url))
     }
   }
   return NextResponse.next()
 }
 
-export const config = { matcher: ['/dashboard/:path*','/contatos/:path*','/plugins/:path*'] }
+export const config = { matcher: ['/dashboard/:path*','/contatos/:path*','/plugins/:path*','/config/:path*'] }
