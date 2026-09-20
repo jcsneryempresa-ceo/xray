@@ -13,6 +13,7 @@ const passos = [
   {
     titulo: "3. Crie um Business Manager",
     texto: "É o painel da Meta onde a verificação do seu negócio acontece. Se você ainda não tem, é gratuito em business.facebook.com.",
+    link: "https://business.facebook.com",
   },
   {
     titulo: "4. Verifique seu negócio",
@@ -45,6 +46,11 @@ export default function ConfigWhatsapp() {
             <div key={p.titulo} className="bg-white rounded-[16px] p-4 shadow-[0_8px_30px_rgba(0,0,0,0.06)] border border-[#F2F2F3]">
               <p className="text-[13.5px] font-semibold text-[#111]">{p.titulo}</p>
               <p className="mt-1.5 text-[12.5px] leading-[1.5] text-[#6B7280]">{p.texto}</p>
+              {"link" in p && p.link && (
+                <a href={p.link} target="_blank" rel="noopener noreferrer" className="mt-2 inline-block text-[12.5px] font-semibold text-[#3B82F6] underline">
+                  {p.link.replace("https://", "")}
+                </a>
+              )}
             </div>
           ))}
         </div>

@@ -1,5 +1,5 @@
 'use client'
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { SmallBrainLogo, IconGear, IconPlus, IconMic, IconSend, IconX } from "@/components/xray/ui";
 import { BottomNav, NavItem } from "@/components/xray/bottom-nav";
 
@@ -9,22 +9,15 @@ const navItems: NavItem[] = [
   { key: "plugins", label: "Plugins", href: "/plugins", icon: "box" },
 ];
 
-type StatusCor = "verde" | "pendente" | "roxo";
-
 type Acao = { texto: string; onClick: () => void } | { texto: string; href: string };
 
 type Insight = {
   id: string;
-  cor: StatusCor;
   titulo: string;
   corpo: React.ReactNode;
+  resumo: string; // versão em texto puro, usada no histórico
+  concluido: boolean;
   acao?: Acao;
-};
-
-const corDot: Record<StatusCor, string> = {
-  verde: "bg-[#22C55E] shadow-[0_0_0_4px_rgba(34,197,94,0.15)]",
-  pendente: "bg-[#F59E0B] shadow-[0_0_0_4px_rgba(245,158,11,0.15)]",
-  roxo: "bg-[#9333EA] shadow-[0_0_0_4px_rgba(147,51,234,0.15)]",
 };
 
 export default function Dashboard() {
@@ -32,6 +25,19 @@ export default function Dashboard() {
   const inputRef = useRef<HTMLInputElement>(null);
   const [mensagens, setMensagens] = useState<{ role: "user" | "assistant"; content: string }[]>([]);
   const [enviando, setEnviando] = useState(false);
+  const [excluidos, setExcluidos] = useState<Set<string>>(new Set());
+  const [excluindo, setExcluindo] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/insights")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.estado?.excluidos) {
+          setExcluidos(new Set(Object.keys(data.estado.excluidos)));
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   async function enviar() {
     const texto = inputText.trim();
@@ -56,12 +62,12 @@ export default function Dashboard() {
     }
   }
 
-
-  const [insights, setInsights] = useState<Insight[]>([
+  const insights: Insight[] = [
     {
       id: "google",
-      cor: "verde",
       titulo: "Google conectado",
+      concluido: true,
+      resumo: "Pasta no Google Drive criada para guardar as fichas de contato.",
       corpo: (
         <>
           Criamos uma pasta só sua no Google Drive — é lá que suas fichas de contato ficam guardadas, com você no controle total.
@@ -72,25 +78,39 @@ export default function Dashboard() {
     },
     {
       id: "whatsapp",
-      cor: "pendente",
       titulo: "Conecte seu WhatsApp",
+      concluido: false,
+      resumo: "Conectar o WhatsApp para o assistente entender o negócio automaticamente.",
       corpo: "É por ele que seu assistente vai entender seu negócio e ajudar sem você precisar digitar nada. Leva menos de 2 minutos.",
       acao: { texto: "Conectar WhatsApp", href: "/config/whatsapp" },
     },
     {
       id: "primeira-conversa",
-      cor: "roxo",
       titulo: "Vamos nos conhecer",
+      concluido: mensagens.length > 0,
+      resumo: "Contar ao assistente o que o negócio vende ou o serviço que presta.",
       corpo: "Me conta um pouco do seu negócio — o que você vende ou o serviço que presta — pra eu já começar a te ajudar com o que fizer sentido.",
       acao: {
         texto: "Contar agora",
         onClick: () => inputRef.current?.focus(),
       },
     },
-  ]);
+  ].filter((i) => !excluidos.has(i.id));
 
-  function arquivar(id: string) {
-    setInsights((prev) => prev.filter((i) => i.id !== id));
+  async function excluir(insight: Insight) {
+    setExcluindo(insight.id);
+    try {
+      await fetch("/api/insights", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: insight.id, titulo: insight.titulo, resumo: insight.resumo }),
+      });
+      setExcluidos((prev) => new Set(prev).add(insight.id));
+    } catch (e) {
+      // silencioso — o card só some depois de confirmar
+    } finally {
+      setExcluindo(null);
+    }
   }
 
   return (
@@ -107,43 +127,51 @@ export default function Dashboard() {
         </div>
 
         <div className="flex-1 overflow-y-auto px-4 pt-4 pb-2 bg-[#FBFBFC]">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#F3E8FF] text-[#9333EA] text-[11px] font-semibold tracking-wide">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#9333EA] animate-pulse" /> INSIGHTS
-          </div>
-
-          <div className="mt-4 space-y-3">
-            {insights.map((insight) => (
-              <div key={insight.id} className="bg-white rounded-[20px] p-4 shadow-[0_8px_30px_rgba(0,0,0,0.06)] border border-[#F2F2F3] relative">
-                <button
-                  onClick={() => arquivar(insight.id)}
-                  aria-label="Arquivar"
-                  className="absolute top-3 right-3 w-6 h-6 rounded-full flex items-center justify-center text-[#C1C4C9] hover:bg-[#F7F7F8] hover:text-[#9AA0A6] transition"
-                >
-                  <IconX />
-                </button>
-                <div className="flex items-center gap-2 pr-6">
-                  <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${corDot[insight.cor]}`} />
-                  <p className="text-[14px] font-semibold text-[#111] leading-tight">{insight.titulo}</p>
+          <div className="space-y-2.5">
+            {insights.map((insight) =>
+              insight.concluido ? (
+                <div key={insight.id} className="bg-[#F4F4F5] rounded-[20px] p-4 relative">
+                  {excluindo === insight.id ? null : (
+                    <button
+                      onClick={() => excluir(insight)}
+                      aria-label="Excluir"
+                      className="absolute top-3 right-3 w-6 h-6 rounded-full flex items-center justify-center text-[#C1C4C9] hover:bg-[#EAEAEC] hover:text-[#9AA0A6] transition"
+                    >
+                      <IconX />
+                    </button>
+                  )}
+                  <div className="flex items-center gap-2 pr-6">
+                    <span className="w-1.5 h-1.5 rounded-full shrink-0 bg-[#B4B7BC]" />
+                    <p className="text-[13.5px] font-medium text-[#6B7280] leading-tight">{insight.titulo}</p>
+                  </div>
+                  <p className="mt-2.5 text-[12.5px] leading-[1.5] text-[#9AA0A6]">{insight.corpo}</p>
                 </div>
-                <p className="mt-3 text-[13px] leading-[1.5] text-[#6B7280]">{insight.corpo}</p>
-                {insight.acao && "href" in insight.acao && (
-                  <a
-                    href={insight.acao.href}
-                    className="mt-3 inline-block h-[38px] leading-[38px] px-4 rounded-full bg-[#111] text-white text-[13px] font-semibold hover:bg-[#2A2A2A] transition"
-                  >
-                    {insight.acao.texto}
-                  </a>
-                )}
-                {insight.acao && "onClick" in insight.acao && (
-                  <button
-                    onClick={insight.acao.onClick}
-                    className="mt-3 h-[38px] px-4 rounded-full bg-[#111] text-white text-[13px] font-semibold hover:bg-[#2A2A2A] transition"
-                  >
-                    {insight.acao.texto}
-                  </button>
-                )}
-              </div>
-            ))}
+              ) : (
+                <div key={insight.id} className="bg-white rounded-[20px] p-4 shadow-[0_8px_30px_rgba(0,0,0,0.06)] border border-[#FDE9C8]">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full shrink-0 bg-[#F59E0B] shadow-[0_0_0_4px_rgba(245,158,11,0.15)]" />
+                    <p className="text-[14px] font-semibold text-[#111] leading-tight">{insight.titulo}</p>
+                  </div>
+                  <p className="mt-3 text-[13px] leading-[1.5] text-[#6B7280]">{insight.corpo}</p>
+                  {insight.acao && "href" in insight.acao && (
+                    <a
+                      href={insight.acao.href}
+                      className="mt-3 inline-block h-[38px] leading-[38px] px-4 rounded-full bg-[#111] text-white text-[13px] font-semibold hover:bg-[#2A2A2A] transition"
+                    >
+                      {insight.acao.texto}
+                    </a>
+                  )}
+                  {insight.acao && "onClick" in insight.acao && (
+                    <button
+                      onClick={insight.acao.onClick}
+                      className="mt-3 h-[38px] px-4 rounded-full bg-[#111] text-white text-[13px] font-semibold hover:bg-[#2A2A2A] transition"
+                    >
+                      {insight.acao.texto}
+                    </button>
+                  )}
+                </div>
+              )
+            )}
 
             {insights.length === 0 && mensagens.length === 0 && (
               <p className="text-[13px] text-[#9AA0A6] mt-6 text-center">Tudo em dia por aqui.</p>
