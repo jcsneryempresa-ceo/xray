@@ -93,10 +93,6 @@ export default function Dashboard() {
       tom: "convite" as const,
       resumo: "Contar ao assistente o que o negócio vende ou o serviço que presta.",
       corpo: "Me conta um pouco do seu negócio — o que você vende ou o serviço que presta — pra eu já começar a te ajudar com o que fizer sentido.",
-      acao: {
-        texto: "Contar agora",
-        onClick: () => inputRef.current?.focus(),
-      },
     },
   ].filter((i) => !excluidos.has(i.id));
 
