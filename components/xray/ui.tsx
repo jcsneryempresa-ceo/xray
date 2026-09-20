@@ -21,7 +21,7 @@ export function BrainLogo({ size = 72 }: { size?: number }) {
 export function SmallBrainLogo() {
   return (
     // eslint-disable-next-line @next/next/no-img-element
-    <img src="/logo-icon.png" alt="Turbo Admin" className="w-8 h-8 rounded-full object-cover shrink-0" />
+    <img src="/logo-icon.png" alt="Turbo Admin" className="w-7 h-7 rounded-full object-cover shrink-0" />
   );
 }
 
