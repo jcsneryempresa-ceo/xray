@@ -1,9 +1,16 @@
 'use client'
 import { SmallBrainLogo } from "@/components/xray/ui";
+import { BottomNav, NavItem } from "@/components/xray/bottom-nav";
+
+const navItems: NavItem[] = [
+  { key: "dashboard", label: "Central", href: "/dashboard", icon: "house" },
+  { key: "contatos", label: "Contatos", href: "/contatos", icon: "users" },
+  { key: "plugins", label: "Plugins", href: "/plugins", icon: "box" },
+];
 
 const opcoes = [
   { titulo: "Conectar WhatsApp", subtitulo: "Ligue seu número ao Turbo Admin", href: "/config/whatsapp" },
-  { titulo: "Histórico de insights", subtitulo: "Tudo que você já resolveu por aqui", href: "/config/historico" },
+  { titulo: "Histórico", subtitulo: "Tudo que você já resolveu por aqui", href: "/config/historico" },
 ];
 
 export default function Config() {
@@ -33,6 +40,8 @@ export default function Config() {
             </a>
           ))}
         </div>
+
+        <BottomNav items={navItems} activeHref="/config" />
       </div>
     </div>
   );

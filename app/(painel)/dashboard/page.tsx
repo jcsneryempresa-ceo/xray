@@ -17,6 +17,7 @@ type Insight = {
   corpo: React.ReactNode;
   resumo: string; // versão em texto puro, usada no histórico
   concluido: boolean;
+  tom?: "alerta" | "convite"; // só importa quando não concluído
   acao?: Acao;
 };
 
@@ -80,6 +81,7 @@ export default function Dashboard() {
       id: "whatsapp",
       titulo: "Conecte seu WhatsApp",
       concluido: false,
+      tom: "alerta",
       resumo: "Conectar o WhatsApp para o assistente entender o negócio automaticamente.",
       corpo: "É por ele que seu assistente vai entender seu negócio e ajudar sem você precisar digitar nada. Leva menos de 2 minutos.",
       acao: { texto: "Conectar WhatsApp", href: "/config/whatsapp" },
@@ -88,6 +90,7 @@ export default function Dashboard() {
       id: "primeira-conversa",
       titulo: "Vamos nos conhecer",
       concluido: mensagens.length > 0,
+      tom: "convite",
       resumo: "Contar ao assistente o que o negócio vende ou o serviço que presta.",
       corpo: "Me conta um pouco do seu negócio — o que você vende ou o serviço que presta — pra eu já começar a te ajudar com o que fizer sentido.",
       acao: {
@@ -100,14 +103,16 @@ export default function Dashboard() {
   async function excluir(insight: Insight) {
     setExcluindo(insight.id);
     try {
-      await fetch("/api/insights", {
+      const res = await fetch("/api/insights", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: insight.id, titulo: insight.titulo, resumo: insight.resumo }),
       });
+      if (!res.ok) throw new Error("falha ao excluir");
       setExcluidos((prev) => new Set(prev).add(insight.id));
     } catch (e) {
-      // silencioso — o card só some depois de confirmar
+      // o card só some da tela quando a gravação no Drive realmente funcionar
+      console.error("Erro ao excluir insight:", e);
     } finally {
       setExcluindo(null);
     }
@@ -147,16 +152,29 @@ export default function Dashboard() {
                   <p className="mt-2.5 text-[12.5px] leading-[1.5] text-[#9AA0A6]">{insight.corpo}</p>
                 </div>
               ) : (
-                <div key={insight.id} className="bg-white rounded-[20px] p-4 shadow-[0_8px_30px_rgba(0,0,0,0.06)] border border-[#FDE9C8]">
+                <div
+                  key={insight.id}
+                  className={`bg-white rounded-[20px] p-4 shadow-[0_8px_30px_rgba(0,0,0,0.06)] border ${
+                    insight.tom === "convite" ? "border-[#BBF7D0]" : "border-[#FDE9C8]"
+                  }`}
+                >
                   <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full shrink-0 bg-[#F59E0B] shadow-[0_0_0_4px_rgba(245,158,11,0.15)]" />
+                    <span
+                      className={`w-2.5 h-2.5 rounded-full shrink-0 ${
+                        insight.tom === "convite"
+                          ? "bg-[#22C55E] shadow-[0_0_0_4px_rgba(34,197,94,0.15)]"
+                          : "bg-[#F59E0B] shadow-[0_0_0_4px_rgba(245,158,11,0.15)]"
+                      }`}
+                    />
                     <p className="text-[14px] font-semibold text-[#111] leading-tight">{insight.titulo}</p>
                   </div>
                   <p className="mt-3 text-[13px] leading-[1.5] text-[#6B7280]">{insight.corpo}</p>
                   {insight.acao && "href" in insight.acao && (
                     <a
                       href={insight.acao.href}
-                      className="mt-3 inline-block h-[38px] leading-[38px] px-4 rounded-full bg-[#111] text-white text-[13px] font-semibold hover:bg-[#2A2A2A] transition"
+                      className={`mt-3 inline-block h-[38px] leading-[38px] px-4 rounded-full text-white text-[13px] font-semibold transition ${
+                        insight.tom === "convite" ? "bg-[#22C55E] hover:bg-[#16A34A]" : "bg-[#111] hover:bg-[#2A2A2A]"
+                      }`}
                     >
                       {insight.acao.texto}
                     </a>
@@ -164,7 +182,9 @@ export default function Dashboard() {
                   {insight.acao && "onClick" in insight.acao && (
                     <button
                       onClick={insight.acao.onClick}
-                      className="mt-3 h-[38px] px-4 rounded-full bg-[#111] text-white text-[13px] font-semibold hover:bg-[#2A2A2A] transition"
+                      className={`mt-3 h-[38px] px-4 rounded-full text-white text-[13px] font-semibold transition ${
+                        insight.tom === "convite" ? "bg-[#22C55E] hover:bg-[#16A34A]" : "bg-[#111] hover:bg-[#2A2A2A]"
+                      }`}
                     >
                       {insight.acao.texto}
                     </button>

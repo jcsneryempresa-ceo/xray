@@ -1,6 +1,13 @@
 'use client'
 import { useEffect, useMemo, useState } from "react";
 import { SmallBrainLogo } from "@/components/xray/ui";
+import { BottomNav, NavItem } from "@/components/xray/bottom-nav";
+
+const navItems: NavItem[] = [
+  { key: "dashboard", label: "Central", href: "/dashboard", icon: "house" },
+  { key: "contatos", label: "Contatos", href: "/contatos", icon: "users" },
+  { key: "plugins", label: "Plugins", href: "/plugins", icon: "box" },
+];
 
 type ItemHistorico = {
   id: string;
@@ -93,6 +100,8 @@ export default function HistoricoInsights() {
             </div>
           ))}
         </div>
+
+        <BottomNav items={navItems} activeHref="/config" />
       </div>
     </div>
   );

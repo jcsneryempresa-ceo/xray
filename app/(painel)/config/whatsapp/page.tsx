@@ -1,5 +1,12 @@
 'use client'
 import { SmallBrainLogo } from "@/components/xray/ui";
+import { BottomNav, NavItem } from "@/components/xray/bottom-nav";
+
+const navItems: NavItem[] = [
+  { key: "dashboard", label: "Central", href: "/dashboard", icon: "house" },
+  { key: "contatos", label: "Contatos", href: "/contatos", icon: "users" },
+  { key: "plugins", label: "Plugins", href: "/plugins", icon: "box" },
+];
 
 const passos = [
   {
@@ -54,6 +61,8 @@ export default function ConfigWhatsapp() {
             </div>
           ))}
         </div>
+
+        <BottomNav items={navItems} activeHref="/config" />
       </div>
     </div>
   );
