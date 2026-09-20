@@ -265,11 +265,12 @@ export default function App() {
         {screen === "login" && (
           <div className="flex-1 flex flex-col px-6 pt-[68px] pb-8">
             <div className="flex flex-col items-center text-center">
-              <BrainLogo size={88} />
-              <h1 className="mt-6 text-[22px] font-bold tracking-[-0.02em] text-black">TURBO ADMIN</h1>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/logo-icon.png" alt="Turbo Admin" className="w-[88px] h-[88px] rounded-full object-cover shadow-[0_8px_24px_rgba(0,0,0,0.12)]" />
+              <h1 className="mt-6 text-[22px] font-bold tracking-[-0.02em] text-black lowercase">turbo admin</h1>
               <div className="mt-10">
                 <h2 className="text-[28px] font-semibold leading-[1.15] tracking-[-0.03em] text-black">Bem-vindo(a)</h2>
-                <p className="mt-3 text-[15px] leading-[1.5] text-[#6B7280] max-w-[280px]">Organize sua gestão com o poder que turbina.</p>
+                <p className="mt-3 text-[15px] leading-[1.5] text-[#6B7280] max-w-[280px]">Gestão turbinada com uma inteligência dedicada a você.</p>
               </div>
 
               <button
