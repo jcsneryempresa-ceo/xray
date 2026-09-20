@@ -81,7 +81,7 @@ export default function Dashboard() {
       id: "whatsapp",
       titulo: "Conecte seu WhatsApp",
       concluido: false,
-      tom: "alerta",
+      tom: "alerta" as const,
       resumo: "Conectar o WhatsApp para o assistente entender o negócio automaticamente.",
       corpo: "É por ele que seu assistente vai entender seu negócio e ajudar sem você precisar digitar nada. Leva menos de 2 minutos.",
       acao: { texto: "Conectar WhatsApp", href: "/config/whatsapp" },
@@ -90,7 +90,7 @@ export default function Dashboard() {
       id: "primeira-conversa",
       titulo: "Vamos nos conhecer",
       concluido: mensagens.length > 0,
-      tom: "convite",
+      tom: "convite" as const,
       resumo: "Contar ao assistente o que o negócio vende ou o serviço que presta.",
       corpo: "Me conta um pouco do seu negócio — o que você vende ou o serviço que presta — pra eu já começar a te ajudar com o que fizer sentido.",
       acao: {
