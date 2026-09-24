@@ -21,6 +21,7 @@ export async function initSchema(){
     titulo TEXT,
     corpo TEXT,
     acao_json TEXT,
+    status TEXT DEFAULT 'pendente',
     criado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (tenant_id, data)
   )`)

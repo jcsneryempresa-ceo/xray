@@ -21,6 +21,17 @@ type Insight = {
   acao?: Acao;
 };
 
+type DicaAcao = { tipo: string; texto: string; href?: string } | null;
+
+type DicaDoDia = {
+  tipo: "dica" | "sentinela";
+  tema: string | null;
+  titulo: string;
+  corpo: string;
+  acao: DicaAcao;
+  status: "pendente" | "aplicada" | "ignorada" | "arquivada";
+};
+
 export default function Dashboard() {
   const [inputText, setInputText] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -29,6 +40,8 @@ export default function Dashboard() {
   const [enviando, setEnviando] = useState(false);
   const [excluidos, setExcluidos] = useState<Set<string>>(new Set());
   const [excluindo, setExcluindo] = useState<string | null>(null);
+  const [dicaDoDia, setDicaDoDia] = useState<DicaDoDia | null>(null);
+  const [atualizandoDica, setAtualizandoDica] = useState(false);
 
   useEffect(() => {
     fetch("/api/insights")
@@ -39,7 +52,34 @@ export default function Dashboard() {
         }
       })
       .catch(() => {});
+
+    fetch("/api/dicas")
+      .then((r) => r.json())
+      .then((data) => setDicaDoDia(data?.dica ?? null))
+      .catch(() => {});
   }, []);
+
+  async function atualizarDica(status: "aplicada" | "ignorada" | "arquivada") {
+    if (!dicaDoDia || atualizandoDica) return;
+    setAtualizandoDica(true);
+    try {
+      const res = await fetch("/api/dicas", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      if (!res.ok) throw new Error("falha ao atualizar dica");
+      if (status === "arquivada") {
+        setDicaDoDia(null);
+      } else {
+        setDicaDoDia({ ...dicaDoDia, status });
+      }
+    } catch (e) {
+      console.error("Erro ao atualizar dica:", e);
+    } finally {
+      setAtualizandoDica(false);
+    }
+  }
 
   useEffect(() => {
     // sempre mostra o conteúdo mais recente inteiro, acima da caixa de texto — como um chat
@@ -134,6 +174,51 @@ export default function Dashboard() {
 
         <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 pt-4 pb-2 bg-[#FBFBFC]">
           <div className="space-y-2.5">
+            {dicaDoDia && (
+              dicaDoDia.tipo === "sentinela" || dicaDoDia.status !== "pendente" ? (
+                <div className="bg-[#F4F4F5] rounded-[20px] p-4 relative">
+                  <button
+                    onClick={() => atualizarDica("arquivada")}
+                    aria-label="Arquivar"
+                    className="absolute top-3 right-3 w-6 h-6 rounded-full flex items-center justify-center text-[#C1C4C9] hover:bg-[#EAEAEC] hover:text-[#9AA0A6] transition"
+                  >
+                    <IconX />
+                  </button>
+                  <div className="flex items-center gap-2 pr-6">
+                    <span className="w-1.5 h-1.5 rounded-full shrink-0 bg-[#B4B7BC]" />
+                    <p className="text-[13.5px] font-medium text-[#6B7280] leading-tight">{dicaDoDia.titulo}</p>
+                  </div>
+                  <p className="mt-2.5 text-[12.5px] leading-[1.5] text-[#9AA0A6]">{dicaDoDia.corpo}</p>
+                </div>
+              ) : (
+                <div className="bg-white rounded-[20px] p-4 shadow-[0_8px_30px_rgba(0,0,0,0.06)] border border-[#BFDBFE]">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full shrink-0 bg-[#3B82F6] shadow-[0_0_0_4px_rgba(59,130,246,0.15)]" />
+                    <p className="text-[14px] font-semibold text-[#111] leading-tight">{dicaDoDia.titulo}</p>
+                  </div>
+                  <p className="mt-3 text-[13px] leading-[1.5] text-[#6B7280]">{dicaDoDia.corpo}</p>
+                  <div className="mt-3 flex gap-2">
+                    {dicaDoDia.acao && (
+                      <button
+                        onClick={() => atualizarDica("aplicada")}
+                        disabled={atualizandoDica}
+                        className="h-[38px] px-4 rounded-full text-white text-[13px] font-semibold bg-[#111] hover:bg-[#2A2A2A] transition disabled:opacity-50"
+                      >
+                        {dicaDoDia.acao.texto}
+                      </button>
+                    )}
+                    <button
+                      onClick={() => atualizarDica("ignorada")}
+                      disabled={atualizandoDica}
+                      className="h-[38px] px-4 rounded-full text-[#6B7280] text-[13px] font-semibold bg-[#F4F4F5] hover:bg-[#EAEAEC] transition disabled:opacity-50"
+                    >
+                      Ignorar
+                    </button>
+                  </div>
+                </div>
+              )
+            )}
+
             {insights.map((insight) =>
               insight.concluido ? (
                 <div key={insight.id} className="bg-[#F4F4F5] rounded-[20px] p-4 relative">
@@ -194,7 +279,7 @@ export default function Dashboard() {
               )
             )}
 
-            {insights.length === 0 && mensagens.length === 0 && (
+            {insights.length === 0 && !dicaDoDia && mensagens.length === 0 && (
               <p className="text-[13px] text-[#9AA0A6] mt-6 text-center">Tudo em dia por aqui.</p>
             )}
 

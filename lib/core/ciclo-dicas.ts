@@ -2,6 +2,8 @@ import { db } from '@/lib/db/turso'
 import type { TemaDica } from './temas-dicas'
 import type { AcaoDica } from './dicas-tipos'
 
+export type StatusDica = 'pendente' | 'aplicada' | 'ignorada' | 'arquivada'
+
 export type DicaDoDia = {
   tenantId: string
   data: string // YYYY-MM-DD, fuso America/Sao_Paulo
@@ -10,6 +12,7 @@ export type DicaDoDia = {
   titulo: string
   corpo: string
   acao: AcaoDica
+  status: StatusDica
 }
 
 const MENSAGEM_SENTINELA = {
@@ -33,8 +36,8 @@ async function jaFechouHoje(tenantId: string, data: string): Promise<boolean> {
 
 async function salvarDicaDoDia(dica: DicaDoDia): Promise<void> {
   await db.execute({
-    sql: `INSERT INTO dicas (tenant_id, data, tipo, tema, titulo, corpo, acao_json)
-          VALUES (?, ?, ?, ?, ?, ?, ?)
+    sql: `INSERT INTO dicas (tenant_id, data, tipo, tema, titulo, corpo, acao_json, status)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
           ON CONFLICT(tenant_id, data) DO NOTHING`,
     args: [
       dica.tenantId,
@@ -44,6 +47,7 @@ async function salvarDicaDoDia(dica: DicaDoDia): Promise<void> {
       dica.titulo,
       dica.corpo,
       dica.acao ? JSON.stringify(dica.acao) : null,
+      dica.status,
     ],
   })
 }
@@ -68,6 +72,7 @@ export async function fecharCicloDoDia(tenantId: string): Promise<DicaDoDia | nu
     titulo: MENSAGEM_SENTINELA.titulo,
     corpo: MENSAGEM_SENTINELA.corpo,
     acao: null,
+    status: 'pendente',
   }
   await salvarDicaDoDia(dica)
   return dica
@@ -89,5 +94,18 @@ export async function obterDicaDeHoje(tenantId: string): Promise<DicaDoDia | nul
     titulo: row.titulo,
     corpo: row.corpo,
     acao: row.acao_json ? JSON.parse(row.acao_json) : null,
+    status: row.status || 'pendente',
   }
+}
+
+// Usado pelos botões APLICAR / IGNORAR / arquivar (x) no dashboard.
+export async function atualizarStatusDica(
+  tenantId: string,
+  status: StatusDica
+): Promise<void> {
+  const data = dataDeHojeSaoPaulo()
+  await db.execute({
+    sql: 'UPDATE dicas SET status = ? WHERE tenant_id = ? AND data = ?',
+    args: [status, tenantId, data],
+  })
 }
