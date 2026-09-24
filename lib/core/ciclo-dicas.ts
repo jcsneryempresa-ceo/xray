@@ -16,8 +16,8 @@ export type DicaDoDia = {
 }
 
 const MENSAGEM_SENTINELA = {
-  titulo: 'Hoje não tivemos novidades',
-  corpo: 'Fiquei de olho nas suas conversas e nada pareceu urgente hoje. Continuo por aqui, avisando quando aparecer algo que valha a pena.',
+  titulo: 'Nada de urgente por hoje',
+  corpo: 'Mas continuo atento e aviso assim que aparecer alguma novidade.',
 }
 
 function dataDeHojeSaoPaulo(): string {
